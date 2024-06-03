@@ -14,7 +14,7 @@ export function moshi() {
       const value = args.at(-1);
       const conds = args.slice(0, -1);
       return obj.with(
-        conds.every((cond) => cond),
+        () => conds.every((cond) => getFunctionValue(cond)),
         value,
       );
     },
@@ -22,32 +22,27 @@ export function moshi() {
       const value = args.at(-1);
       const conds = args.slice(0, -1);
       return obj.with(
-        conds.some((cond) => cond),
+        () => conds.some((cond) => getFunctionValue(cond)),
         value,
       );
     },
     toArray: () => {
-      return rules.flatMap((rule) => {
+      return rules.reduce((memo, rule) => {
         const [cond, value] = rule;
 
-        let finalValue = value;
-        if (typeof value === 'function') {
-          finalValue = value();
+        if (getFunctionValue(cond)) {
+          memo.push(getFunctionValue(value));
         }
 
-        return cond ? [finalValue] : [];
-      });
+        return memo;
+      }, []);
     },
     toObject: () => {
       return rules.reduce((memo, rule) => {
         const [cond, value] = rule;
 
-        let finalValue = value;
-        if (typeof value === 'function') {
-          finalValue = value();
-        }
-        if (cond) {
-          Object.assign(memo, finalValue);
+        if (getFunctionValue(cond)) {
+          Object.assign(memo, getFunctionValue(value));
         }
 
         return memo;
@@ -56,4 +51,11 @@ export function moshi() {
   };
 
   return obj;
+}
+
+function getFunctionValue(maybeFunction) {
+  if (typeof maybeFunction === 'function') {
+    return maybeFunction();
+  }
+  return maybeFunction;
 }

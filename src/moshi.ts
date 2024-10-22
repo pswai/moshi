@@ -1,15 +1,19 @@
 const SPREAD = Symbol('spread');
 
-class MoshiArray {
-  readonly rules: any[];
+class MoshiArray<T> {
+  private readonly items: T[] = [];
 
-  constructor(prefixValues: any[] = []) {
-    this.rules = prefixValues;
+  constructor(prefixValues?: T[]) {
+    if (prefixValues) {
+      this.items = prefixValues;
+    }
   }
 
-  with(value: any): this;
-  with(toInclude: any, value: any): this;
-  with(...args: any[]): this {
+  with<U extends T>(value: U): MoshiArray<T | U>;
+  with<U = never>(value: NoInfer<U>): MoshiArray<T | U>;
+  with<U extends T>(toInclude: any, value: U): MoshiArray<T | U>;
+  with<U = never>(toInclude: any, value: NoInfer<U>): MoshiArray<T | U>;
+  with<U>(...args: [any, U] | [U]) {
     // Do nothing if nothing is passed
     if (args.length < 1) {
       // TODO: Use invariant
@@ -35,7 +39,7 @@ class MoshiArray {
   }
 
   value() {
-    return this.rules;
+    return this.items;
   }
 
   private addValue(value: any, evaluateFunction = true) {
@@ -43,15 +47,15 @@ class MoshiArray {
       this.addValue(value(), false);
     } else if (value && typeof value === 'object' && 'type' in value) {
       if (value.type === SPREAD) {
-        this.rules.push(...value.spreadTarget);
+        this.items.push(...value.spreadTarget);
       }
     } else {
-      this.rules.push(value);
+      this.items.push(value);
     }
   }
 }
 
-export function array(prefixValues?: any[]) {
+export function array<T>(prefixValues?: T[]) {
   return new MoshiArray(prefixValues);
 }
 

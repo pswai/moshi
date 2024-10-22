@@ -1,61 +1,77 @@
-export function moshi() {
-  const rules = [];
+const SPREAD = Symbol('spread');
 
-  const obj = {
-    with: (...args) => {
-      if (args.length === 1) {
-        rules.push([true, args[0]]);
-      } else {
-        rules.push(args);
-      }
-      return obj;
-    },
-    and: (...args) => {
-      const value = args.at(-1);
-      const conds = args.slice(0, -1);
-      return obj.with(
-        () => conds.every((cond) => getFunctionValue(cond)),
-        value,
-      );
-    },
-    or: (...args) => {
-      const value = args.at(-1);
-      const conds = args.slice(0, -1);
-      return obj.with(
-        () => conds.some((cond) => getFunctionValue(cond)),
-        value,
-      );
-    },
-    toArray: () => {
-      return rules.reduce((memo, rule) => {
-        const [cond, value] = rule;
+class MoshiArray {
+  readonly rules: any[];
 
-        if (getFunctionValue(cond)) {
-          memo.push(getFunctionValue(value));
-        }
-
-        return memo;
-      }, []);
-    },
-    toObject: () => {
-      return rules.reduce((memo, rule) => {
-        const [cond, value] = rule;
-
-        if (getFunctionValue(cond)) {
-          Object.assign(memo, getFunctionValue(value));
-        }
-
-        return memo;
-      }, {});
-    },
-  };
-
-  return obj;
-}
-
-function getFunctionValue(maybeFunction) {
-  if (typeof maybeFunction === 'function') {
-    return maybeFunction();
+  constructor(prefixValues: any[] = []) {
+    this.rules = prefixValues;
   }
-  return maybeFunction;
+
+  with(value: any): this;
+  with(toInclude: any, value: any): this;
+  with(...args: any[]): this {
+    // Do nothing if nothing is passed
+    if (args.length < 1) {
+      // TODO: Use invariant
+      console.warn(`Nothing is passed to \`with()\`, something's missing?`);
+      return this;
+    }
+
+    if (args.length === 1) {
+      this.addValue(args[0]);
+      return this;
+    }
+
+    const [toInclude, value] = args;
+    if (typeof toInclude === 'function') {
+      if (toInclude()) {
+        this.addValue(value);
+      }
+    } else if (toInclude) {
+      this.addValue(value);
+    }
+
+    return this;
+  }
+
+  value() {
+    return this.rules;
+  }
+
+  private addValue(value: any, evaluateFunction = true) {
+    if (evaluateFunction && typeof value === 'function') {
+      this.addValue(value(), false);
+    } else if (value && typeof value === 'object' && 'type' in value) {
+      if (value.type === SPREAD) {
+        this.rules.push(...value.spreadTarget);
+      }
+    } else {
+      this.rules.push(value);
+    }
+  }
 }
+
+export function array(prefixValues?: any[]) {
+  return new MoshiArray(prefixValues);
+}
+
+export function spread(value: any[]) {
+  return {
+    type: SPREAD,
+    spreadTarget: value,
+  };
+}
+
+export default {
+  array,
+};
+
+// // Sugar
+// test.todo("and()/every() helper");
+// test.todo("or()/some()/any() helper");
+
+// Question
+// - Support async operations?
+// - Time complexity: O(n)?
+// - Caching?
+// - Lazy evaluation?

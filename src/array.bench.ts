@@ -30,3 +30,27 @@ describe('array, with(n) x1000, keep calling value()', () => {
     });
   }
 });
+
+for (const count of counts) {
+  describe(`compare to native x${count}`, () => {
+    bench('native', () => {
+      const arr: number[] = [];
+
+      for (let i = 0; i < count; ++i) {
+        if (i % 2 === 0) {
+          arr.push(i);
+        }
+      }
+    });
+
+    bench('moshi', () => {
+      let m = moshi.array<number>();
+
+      for (let i = 0; i < count; ++i) {
+        m = m.with(i % 2 === 0, i);
+      }
+
+      m.value();
+    });
+  });
+}

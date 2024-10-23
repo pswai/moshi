@@ -1,22 +1,6 @@
 import { expect, test } from 'vitest';
 import moshi, { spread } from './moshi';
 
-// moshi
-//   .array(["these", "are", "prefixes"])
-//   .with("always include") // can be in prefix also
-//   .with(true, "true include")
-//   .with(false, "false not include")
-//   .with(["include", "as", "array"])
-//   .with(spread(["flattened", "into", "result"]))
-//   .with(every(true, true, true), "include")
-//   .with(some(true, false, false), "include")
-//   .with(() => true, "include")
-//   .with(true, () => "include")
-//   .with(true, () => spread(["include", "as", "array"]))
-//   .with(true, () => () => {})
-//   // Factory above, `value` actually returns the resulting array
-//   .value();
-
 test('empty', () => {
   const result = moshi.array().value();
 
@@ -29,15 +13,31 @@ test('prefix values', () => {
   expect(result).toEqual(['prefix', 'is', 'here']);
 });
 
-test('if no condition, always include', () => {
-  const result = moshi.array().with('everything').with('is').with('in').value();
+test('no condition, include', () => {
+  const result = moshi
+    .array<string>()
+    .with('everything')
+    .with('is')
+    .with('in')
+    .value();
+
+  expect(result).toEqual(['everything', 'is', 'in']);
+});
+
+test('no condition, function arg, include', () => {
+  const result = moshi
+    .array<string>()
+    .with(() => 'everything')
+    .with(() => 'is')
+    .with(() => 'in')
+    .value();
 
   expect(result).toEqual(['everything', 'is', 'in']);
 });
 
 test('truthy condition, include', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(true, 'boolean')
     .with(1, 'number')
     .with(1n, 'bigint')
@@ -60,7 +60,7 @@ test('truthy condition, include', () => {
 
 test('falsy condition, exclude', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(null, 'null')
     .with(undefined, 'undefined')
     .with(false, 'false')
@@ -77,7 +77,7 @@ test('falsy condition, exclude', () => {
 
 test('mixed conditions', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with('', '[exclude] empty string')
     .with(true, '[include] boolean')
     .with(null, '[exclude] null')
@@ -108,8 +108,35 @@ test('mixed conditions', () => {
 
 test('spread() array', () => {
   const result = moshi
-    .array()
+    .array<number>()
     .with(spread([4, 5, 6]))
+    .value();
+
+  expect(result).toEqual([4, 5, 6]);
+});
+
+test('function arg, spread() array', () => {
+  const result = moshi
+    .array<number>()
+    .with(() => spread([4, 5, 6]))
+    .value();
+
+  expect(result).toEqual([4, 5, 6]);
+});
+
+test('condition, spread() array', () => {
+  const result = moshi
+    .array<number>()
+    .with(true, spread([4, 5, 6]))
+    .value();
+
+  expect(result).toEqual([4, 5, 6]);
+});
+
+test('condition, function arg, spread() array', () => {
+  const result = moshi
+    .array<number>()
+    .with(true, () => spread([4, 5, 6]))
     .value();
 
   expect(result).toEqual([4, 5, 6]);
@@ -119,18 +146,18 @@ test('different value types', () => {
   const noop = () => {};
   const result = moshi
     .array()
-    .with(true)
+    .with<boolean>(true)
     .with(false)
-    .with(0)
+    .with<number>(0)
     .with(1)
-    .with(0n)
+    .with<bigint>(0n)
     .with(1n)
-    .with(Symbol.for('key'))
-    .with('lol')
-    .with([1, 2, 3])
+    .with<symbol>(Symbol.for('key'))
+    .with<string>('lol')
+    .with<number[]>([1, 2, 3])
     .with(spread([4, 5, 6]))
-    .with({ a: 1, b: 2 })
-    .with(() => noop)
+    .with<{ a: number; b: number }>({ a: 1, b: 2 })
+    .with<() => void>(() => noop)
     .with(() => spread([7, 8, 9]))
     .value();
 
@@ -157,7 +184,7 @@ test('different value types', () => {
 
 test('function `toInclude`, truthy condition, include', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(() => true, 'boolean')
     .with(() => 1, 'number')
     .with(() => 1n, 'bigint')
@@ -180,7 +207,7 @@ test('function `toInclude`, truthy condition, include', () => {
 
 test('function `toInclude`, falsy condition, exclude', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(() => null, 'null')
     .with(() => undefined, 'undefined')
     .with(() => false, 'false')
@@ -197,7 +224,7 @@ test('function `toInclude`, falsy condition, exclude', () => {
 
 test('function `toInclude`, mixed conditions', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(() => '', '[exclude] empty string')
     .with(() => true, '[include] boolean')
     .with(() => null, '[exclude] null')
@@ -228,7 +255,7 @@ test('function `toInclude`, mixed conditions', () => {
 
 test('function `toInclude`, mixed conditions, function value arg', () => {
   const result = moshi
-    .array()
+    .array<string>()
     .with(
       () => '',
       () => '[exclude] empty string',

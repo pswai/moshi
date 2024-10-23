@@ -301,3 +301,31 @@ test('function `toInclude`, mixed conditions, function value arg', () => {
     '[include] empty object',
   ]);
 });
+
+test('`with()` should not mutate anything', () => {
+  const base = moshi.array(['both']);
+  const m1 = base.with('first');
+  const m2 = base.with('second');
+
+  expect(m1.value()).toEqual(['both', 'first']);
+  expect(m2.value()).toEqual(['both', 'second']);
+});
+
+test('`with()` immutability with conditions', () => {
+  const base = moshi
+    .array(['both'])
+    .with(true, 'include')
+    .with(false, 'exclude');
+  const m1 = base.with(true, 'first');
+  const m2 = base.with(false, 'second').with(1, 'second include');
+
+  expect(m1.value()).toEqual(['both', 'include', 'first']);
+  expect(m2.value()).toEqual(['both', 'include', 'second include']);
+});
+
+test('throws when `with` missing arguments', () => {
+  expect(() => {
+    // @ts-expect-error Purposely bypass TS for testing purpose
+    moshi.array().with();
+  }).toThrowError('`with()` expects at least 1 argument');
+});

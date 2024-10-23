@@ -17,22 +17,20 @@ class MoshiArray<T> {
     // Do nothing if nothing is passed
     if (args.length < 1) {
       // TODO: Use invariant
-      console.warn(`Nothing is passed to \`with()\`, something's missing?`);
-      return this;
+      throw new Error('`with()` expects at least 1 argument');
     }
 
     if (args.length === 1) {
-      this.addValue(args[0]);
-      return this;
+      return new MoshiArray(this.getItemsWithNewValue(args[0]));
     }
 
     const [toInclude, value] = args;
     if (typeof toInclude === 'function') {
       if (toInclude()) {
-        this.addValue(value);
+        return new MoshiArray(this.getItemsWithNewValue(value));
       }
     } else if (toInclude) {
-      this.addValue(value);
+      return new MoshiArray(this.getItemsWithNewValue(value));
     }
 
     return this;
@@ -42,16 +40,17 @@ class MoshiArray<T> {
     return this.items;
   }
 
-  private addValue(value: any, evaluateFunction = true) {
+  private getItemsWithNewValue(value: any, evaluateFunction = true): any[] {
     if (evaluateFunction && typeof value === 'function') {
-      this.addValue(value(), false);
-    } else if (value && typeof value === 'object' && 'type' in value) {
-      if (value.type === SPREAD) {
-        this.items.push(...value.spreadTarget);
-      }
-    } else {
-      this.items.push(value);
+      return this.getItemsWithNewValue(value(), false);
     }
+    if (value && typeof value === 'object' && 'type' in value) {
+      if (value.type === SPREAD) {
+        return [...this.items, ...value.spreadTarget];
+      }
+    }
+
+    return [...this.items, value];
   }
 }
 

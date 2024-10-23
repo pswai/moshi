@@ -1,32 +1,36 @@
 import { test, expectTypeOf, assertType } from "vitest";
 import moshi from "./moshi";
 
-test("moshi all", () => {
+test("array function", () => {
   expectTypeOf(moshi).toHaveProperty("array");
 
   expectTypeOf(moshi.array).toBeFunction();
   expectTypeOf(moshi.array).toBeCallableWith([1, 2, 3]);
+  expectTypeOf(moshi.array).toBeCallableWith([1, 'string', false]);
+});
 
-  // const m = moshi.array();
-  // expectTypeOf(m.value()).toEqualTypeOf<unknown[]>();
-  // expectTypeOf(m.with(1)).toEqualTypeOf(m);
-  // expectTypeOf(m.with(1).value()).toEqualTypeOf<number[]>();
+test("enforce type of current array", () => {
+  const m = moshi.array([1, 2, 3]);
+  expectTypeOf(m.value()).toEqualTypeOf<number[]>();
+  expectTypeOf(m.with(4)).toEqualTypeOf(m);
+  expectTypeOf(m.with(4).value()).toEqualTypeOf<number[]>();
 
-  const m2 = moshi.array([1, 2, 3]);
-  expectTypeOf(m2.value()).toEqualTypeOf<number[]>();
-  expectTypeOf(m2.with(4)).toEqualTypeOf(m2);
-  expectTypeOf(m2.with(4).value()).toEqualTypeOf<number[]>();
-  // @ts-expect-error
-  assertType(m2.with("string"));
+  // @ts-expect-error Type is enforced, can only be number
+  assertType(m.with("string"));
+});
 
-  const m3 = moshi.array([1, "string"]);
-  expectTypeOf(m3.value()).toEqualTypeOf<(number | string)[]>();
-  expectTypeOf(m3.with(4)).toEqualTypeOf(m3);
-  expectTypeOf(m3.with(4).value()).toEqualTypeOf<(number | string)[]>();
-  expectTypeOf(m3.with<boolean>(true).value()).toEqualTypeOf<
+test("adding new type by specifying generic", () => {
+  const m = moshi.array([1, "string"]);
+  expectTypeOf(m.value()).toEqualTypeOf<(number | string)[]>();
+  expectTypeOf(m.with(4)).toEqualTypeOf(m);
+  expectTypeOf(m.with(4).value()).toEqualTypeOf<(number | string)[]>();
+
+  // @ts-expect-error Type is enforced, can only be number | string
+  assertType(m.with(true));
+
+  const withBoolean = m.with<boolean>(true);
+  expectTypeOf(withBoolean.value()).toEqualTypeOf<
     (number | string | boolean)[]
   >();
-
-  // @ts-expect-error
-  assertType(m3.with(true));
+  assertType<(number | string | boolean)[]>(withBoolean.with(false).value())
 });
